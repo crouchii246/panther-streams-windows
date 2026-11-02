@@ -19,7 +19,20 @@ function go(page){
   if(['Movies','Series','Favourites'].includes(page)) drawCatalogue(page);
 }
 $('toggle-password').addEventListener('click',()=>{$('password').type=$('password').type==='password'?'text':'password';$('toggle-password').textContent=$('password').type==='password'?'Show':'Hide';});
-$('sign-in').addEventListener('click',()=>{$('notice').textContent='This starter build does not authenticate accounts. Please use Explore Demo; no password has been transmitted.';});
+let verifyingLogin = false;
+async function attemptLogin(){
+  if (verifyingLogin) return;
+  const service = $('provider').value, username = $('username').value.trim(), password = $('password').value;
+  if (!service || !username || !password) { $('notice').textContent = 'Select a service and enter your username and password.'; return; }
+  verifyingLogin = true; $('sign-in').disabled = true; $('notice').textContent = 'Checking secure account access…';
+  try {
+    const result = await window.panther.verifyLogin({service, username, password});
+    $('notice').textContent = result && typeof result.message === 'string' ? result.message : 'Login could not be completed.';
+  } catch { $('notice').textContent = 'The secure login service could not be reached.'; }
+  finally { $('password').value = ''; verifyingLogin = false; $('sign-in').disabled = false; }
+}
+$('sign-in').addEventListener('click',attemptLogin);
+$('password').addEventListener('keydown',event=>{if(event.key==='Enter')attemptLogin();});
 $('demo').addEventListener('click',()=>{$('username').value='';$('password').value='';$('entry').classList.add('hidden');$('app').classList.remove('hidden');go('Home');});
 $('back').addEventListener('click',()=>{$('app').classList.add('hidden');$('entry').classList.remove('hidden');$('password').value='';});
 $('explore').addEventListener('click',()=>go('Live TV'));

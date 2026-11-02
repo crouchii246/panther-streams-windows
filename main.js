@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
+const TEST_BUILD = '0.5.0';
 
 const SUPABASE = 'https://yjjrokhbapsehorfgnfz.supabase.co';
 const PUBLISHABLE_KEY = 'sb_publishable_VjFzBu44Dq2eBx5Ve76j5A_vQ4f8jTC';
@@ -63,6 +64,35 @@ ipcMain.handle('panther:verify-login', async (_event, payload) => {
   } catch {
     return { ok: false, message: 'Unable to reach the secure login service. Check your connection.' };
   }
+});
+// Diagnostic calls contain no account credentials and disclose no service URLs.
+ipcMain.handle('panther:diagnostics', async () => {
+  const checks = [{ label: 'Desktop application', ok: true, detail: `Panther Streams ${TEST_BUILD} (${process.platform}, Electron ${process.versions.electron})` }];
+  try {
+    const controller = AbortSignal.timeout(10000);
+    const response = await fetch(`${SUPABASE}/rest/v1/rpc/panther_get_services`, {
+      method: 'POST',
+      headers: { apikey: PUBLISHABLE_KEY, 'content-type': 'application/json', accept: 'application/json' },
+      body: '{}', redirect: 'error', signal: controller
+    });
+    const data = response.ok ? await response.json().catch(() => null) : null;
+    const rows = Array.isArray(data) ? data : Array.isArray(data?.services) ? data.services : null;
+    const count = rows?.filter(s => typeof s.provider_key === 'string' && typeof s.service_url === 'string').length ?? 0;
+    checks.push({ label: 'Panther Admin services', ok: response.ok && count > 0, detail: response.ok ? `${count} service${count===1?'':'s'} available` : `Unavailable (HTTP ${response.status})` });
+  } catch { checks.push({ label:'Panther Admin services', ok:false, detail:'Could not reach Supabase' }); }
+  // POST deliberately invalid, empty credentials to check reachability without sending a real password.
+  try {
+    const response = await fetch(`${SUPABASE}/functions/v1/panther-web-auth`, {
+      method:'POST',
+      headers:{ apikey:PUBLISHABLE_KEY, 'content-type':'application/json', accept:'application/json' },
+      body: JSON.stringify({service:'',username:'',password:''}),
+      redirect:'error', signal: AbortSignal.timeout(10000)
+    });
+    const reachable = [400,401,403,422,503].includes(response.status);
+    checks.push({ label:'Secure login service', ok: reachable, detail:reachable ? `Responded (HTTP ${response.status}); actual login not tested` : `Unexpected response (HTTP ${response.status})` });
+  } catch { checks.push({ label:'Secure login service', ok:false, detail:'Could not reach the authentication endpoint' }); }
+  checks.push({ label:'IPTV content / playback', ok:false, detail:'Not implemented; no real streams are contacted in this build' });
+  return {checks, version:TEST_BUILD};
 });
 app.whenReady().then(() => {
   createWindow();

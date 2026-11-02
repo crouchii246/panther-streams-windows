@@ -1,21 +1,22 @@
-# Panther Streams Windows v0.4.0 (verification preview)
+# Panther Streams Windows v0.5.0 — test build
 
-This Windows Electron application preserves the Live TV, Movies and Series demonstration screens from v0.3.0.
+Built on v0.4.0. This update is intended for the first Windows PC installation and connectivity test.
 
-## What's new
+## Added
 
-- Uses your existing Supabase `panther_get_services` RPC to list service names.
-- The **Sign In** action now calls the existing `panther-web-auth` HTTPS Supabase Edge Function via Electron's main process.
-- Never saves passwords, echoes tokens to the UI, or connects directly to provider HTTP endpoints.
-- Displays clear errors for missing credentials, secure-provider configuration problems and unavailable services.
-- Clears the password field after every attempt.
+- **System Test** page from the sidebar, with local app/version info, Panther Admin service reachability, HTTPS login-function reachability (using invalid empty credentials), and explicit real-playback-not-ready status.
+- Tests avoid sending actual IPTV passwords, listing private service URLs, or storing secrets.
+- Existing Live TV, Movies and Series demonstration UI and the Supabase verification login from v0.4.0 are preserved.
 
-## Known limitations
+## Limitations
 
-The Edge Function currently refuses HTTP-only provider URLs. This build does **not** bypass that protection. Even a positive verification response does not yet open a customer catalogue; catalogue and playback are still demo-only. The function's success response shape should be verified before enabling real customer access. A Windows PC is needed for actual runtime testing.
+- This is **not a fully functional IPTV player**. Real catalogue, streaming and playback are not enabled.
+- HTTP-only IPTV provider URLs remain blocked by the secure login function. A responding login function does not mean an account is authenticated.
+- No Windows runtime test was performed here. Verify using the Windows PC: install, launch, Explore demo, browse Live TV/Movies/Series, use System Test, and verify the login error messages without sharing passwords.
+- Please only access content and streams for which you have permission.
 
-## Building
+## GitHub install/build
 
-Keep your existing `.github/workflows/build-windows.yml` file in the GitHub repository. Upload only the seven root files from this ZIP, commit to `main`, and check Actions. No workflow changes are required.
+Upload the seven files in this archive to the root of your existing `panther-streams-windows` repository, replacing identical filenames. **Do not delete or overwrite `.github/workflows/build-windows.yml`.** Commit to `main`; your existing Actions workflow builds an installer named `Panther-Streams-Setup-0.5.0.exe`. Workflow command should remain `npm run dist:win -- --publish never`.
 
-Local checks: `npm run check`. Windows CI: `npm run dist:win -- --publish never`.
+Run `npm run check` for JavaScript syntax checks. This project uses `electron` and `electron-builder`.

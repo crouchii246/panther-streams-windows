@@ -13,6 +13,7 @@ function go(page){
   $('live').classList.toggle('hidden',page!=='Live TV');
   $('catalogue').classList.toggle('hidden',!['Movies','Series','Favourites'].includes(page));
   $('placeholder').classList.toggle('hidden',!['Continue Watching','Panther Support'].includes(page));
+  $('diagnostics').classList.toggle('hidden',page!=='System Test');
   $('placeholder-title').textContent=page;
   $('placeholder-desc').textContent=names[page]||'';
   document.querySelectorAll('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
@@ -156,3 +157,29 @@ function drawCatalogue(page=cataloguePage){
 $('catalogue-search').addEventListener('input',()=>drawCatalogue());
 $('catalogue-category').addEventListener('change',()=>drawCatalogue());
 $('catalogue-sort').addEventListener('change',()=>drawCatalogue());
+
+// v0.5.0 safe diagnostic display: results use textContent rather than HTML.
+let testing = false;
+$('run-tests').addEventListener('click',async()=>{
+  if(testing)return;
+  testing=true;
+  $('run-tests').disabled=true;
+  $('test-summary').textContent='Running local and network checks…';
+  $('test-results').replaceChildren();
+  try {
+    const report=await window.panther.runDiagnostics();
+    if(!report || !Array.isArray(report.checks)) throw new Error('Invalid response');
+    for(const result of report.checks){
+      const row=document.createElement('div');row.className='test-result';
+      const symbol=document.createElement('span');symbol.className=result.ok?'test-pass':'test-info';symbol.textContent=result.ok?'✓':'•';
+      const detail=document.createElement('div');
+      const title=document.createElement('strong');title.textContent=String(result.label||'Check');
+      const msg=document.createElement('small');msg.textContent=String(result.detail||'');
+      detail.append(title,msg);row.append(symbol,detail);$('test-results').append(row);
+    }
+    const passed=report.checks.filter(c=>c.ok).length;
+    $('test-summary').textContent=`${passed} of ${report.checks.length} checks reported available. See details below.`;
+  }catch{
+    $('test-summary').textContent='Diagnostics could not complete. The app may be offline or unable to reach its own backend.';
+  }finally{testing=false;$('run-tests').disabled=false;}
+});

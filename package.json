@@ -1,6 +1,6 @@
 {
   "name": "panther-streams-windows",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Panther Streams Windows desktop app",
   "main": "main.js",
@@ -9,12 +9,30 @@
     "dist:win": "electron-builder --win nsis",
     "check": "node --check main.js && node --check preload.js && node --check renderer.js"
   },
-  "devDependencies": {"electron": "^33.4.11", "electron-builder": "^25.1.8"},
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  },
   "build": {
     "appId": "com.pantherstreams.windows",
     "productName": "Panther Streams",
-    "files": ["main.js", "preload.js", "renderer.js", "index.html", "styles.css"],
-    "win": {"target": ["nsis"]},
-    "nsis": {"oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "artifactName": "Panther-Streams-Setup-${version}.${ext}"}
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer.js",
+      "index.html",
+      "styles.css"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "artifactName": "Panther-Streams-Setup-${version}.${ext}"
+    }
   }
 }

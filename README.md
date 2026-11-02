@@ -19,3 +19,7 @@ Alternatively push the complete folder contents to a GitHub repository and run t
 - Adding Xtream HTTP login requires explicit security evaluation: an HTTP provider cannot securely receive credentials, even from a native app. Prefer HTTPS endpoints and licensed content.
 - Implement real player and profile sync separately; current content pages are placeholders, not live streams.
 - For public distribution, Windows code signing is recommended to reduce SmartScreen warnings.
+
+
+## v0.2.0
+Adds a sample Live TV browser with search, categories, selection, and a fictional programme guide. This is an interface preview only. Real IPTV login, playback, and EPG are not connected. Do not enter real passwords.

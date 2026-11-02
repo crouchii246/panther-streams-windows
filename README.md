@@ -1,25 +1,17 @@
-# Panther Streams Windows — starter project
+# Panther Streams Windows v0.3.0
 
-Desktop-first Panther Streams prototype built with Electron. It loads managed provider **names** from the existing Supabase `panther_get_services` RPC. Login and streams are intentionally **not** enabled yet. Do not enter real account passwords into the starter build.
+Desktop **preview** for Windows 10/11. Includes service-list selection from Panther Admin, nonfunctional login form, fictional Live TV programme guide, fictional Movies & Series catalogue, genre and search filters, episode selection, and locally stored **demo-only favourites**.
 
-## Build for Windows
+## Security and limitations
+- The Sign In button does not send or store usernames/passwords. Never enter actual customer passwords into this preview.
+- No provider IPTV authentication, movies, streams or playback is connected. All sample programmes/titles are fictional.
+- Only public service display names are fetched from Supabase.
+- Demo favourites are stored only on this computer in the app's local storage, not synced to Panther accounts.
+- The existing GitHub Actions workflow should be retained, including `--publish never` in its build command.
 
-1. Install Node.js 22 on Windows.
-2. Open a terminal in this folder and run `npm install`.
-3. Run `npm start` to preview the Windows app.
-4. Run `npm run dist:win` to create an installer in the `dist` folder.
+## Build
+- `npm install`
+- `npm run check`
+- `npm run dist:win -- --publish never`
 
-Alternatively push the complete folder contents to a GitHub repository and run the included **Build Panther Streams Windows installer** GitHub Actions workflow, which produces a downloadable `.exe` artifact.
-
-## Security and integration notes
-
-- Only the public Supabase publishable key is embedded. The renderer sees service labels, not provider URLs.
-- The Electron renderer has Node integration disabled, context isolation, sandbox, a restrictive content security policy, and a minimal validated IPC surface.
-- No provider passwords are sent, saved, or logged in this starter build.
-- Adding Xtream HTTP login requires explicit security evaluation: an HTTP provider cannot securely receive credentials, even from a native app. Prefer HTTPS endpoints and licensed content.
-- Implement real player and profile sync separately; current content pages are placeholders, not live streams.
-- For public distribution, Windows code signing is recommended to reduce SmartScreen warnings.
-
-
-## v0.2.0
-Adds a sample Live TV browser with search, categories, selection, and a fictional programme guide. This is an interface preview only. Real IPTV login, playback, and EPG are not connected. Do not enter real passwords.
+Upload/replace the seven top-level project files in the existing `panther-streams-windows` repo, **not** the `.github` workflow folder. GitHub automatically builds on commits to main.

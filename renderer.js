@@ -183,3 +183,34 @@ $('run-tests').addEventListener('click',async()=>{
     $('test-summary').textContent='Diagnostics could not complete. The app may be offline or unable to reach its own backend.';
   }finally{testing=false;$('run-tests').disabled=false;}
 });
+
+// v0.6.0 provider readiness check. Names and protocol status only; never display server URLs.
+let checkingProviders = false;
+$('check-providers').addEventListener('click', async () => {
+  if (checkingProviders) return;
+  checkingProviders = true;
+  $('check-providers').disabled = true;
+  const output = $('provider-readiness');
+  output.replaceChildren();
+  try {
+    const report = await window.panther.providerReadiness();
+    if (!report || !report.ok || !Array.isArray(report.providers)) {
+      const error = document.createElement('p');
+      error.textContent = report?.message || 'Could not inspect service configuration.';
+      output.append(error);
+      return;
+    }
+    for (const provider of report.providers) {
+      const row = document.createElement('div'); row.className='test-result';
+      const symbol = document.createElement('span');
+      symbol.className = provider.status === 'HTTPS configured' ? 'test-pass' : 'test-info';
+      symbol.textContent = provider.status === 'HTTPS configured' ? '✓' : '•';
+      const detail = document.createElement('div');
+      const heading = document.createElement('strong');heading.textContent = `${provider.name} — ${provider.status}`;
+      const description = document.createElement('small');description.textContent = provider.note;
+      detail.append(heading,description);row.append(symbol,detail);output.append(row);
+    }
+    if (!report.providers.length) {const p=document.createElement('p');p.textContent='No provider configurations returned.';output.append(p);}
+  } catch { const error=document.createElement('p');error.textContent='Provider inspection unavailable.';output.append(error); }
+  finally {checkingProviders=false;$('check-providers').disabled=false;}
+});

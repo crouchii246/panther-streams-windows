@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('node:path');
-const TEST_BUILD = '0.5.0';
+const TEST_BUILD = '0.6.0';
 
 const SUPABASE = 'https://yjjrokhbapsehorfgnfz.supabase.co';
 const PUBLISHABLE_KEY = 'sb_publishable_VjFzBu44Dq2eBx5Ve76j5A_vQ4f8jTC';
@@ -33,6 +33,35 @@ ipcMain.handle('panther:services', async () => {
     const rows = Array.isArray(data) ? data : Array.isArray(data?.services) ? data.services : [];
     return { ok: true, services: rows.filter(s => typeof s.provider_key === 'string' && typeof s.service_url === 'string').map(s => ({key: s.provider_key, name: s.display_name || s.provider_key, order: Number(s.sort_order) || 0})).sort((a,b)=>a.order-b.order) };
   } catch(error) { return { ok: false, error: 'Cannot load services from Panther Admin. Check your internet connection.' }; }
+});
+// Read provider transport configuration without exposing hostnames, ports or credentials.
+// This is a local readiness inspection, NOT an authentication or playback test.
+ipcMain.handle('panther:provider-readiness', async () => {
+  try {
+    const response = await fetch(`${SUPABASE}/rest/v1/rpc/panther_get_services`, {
+      method: 'POST',
+      headers: { apikey: PUBLISHABLE_KEY, 'content-type': 'application/json', accept: 'application/json' },
+      body: '{}', redirect: 'error', signal: AbortSignal.timeout(10000)
+    });
+    if (!response.ok) return { ok: false, message: `Service configuration unavailable (HTTP ${response.status}).` };
+    const data = await response.json();
+    const rows = Array.isArray(data) ? data : Array.isArray(data?.services) ? data.services : [];
+    const providers = rows.filter(s => typeof s.provider_key === 'string' && typeof s.service_url === 'string')
+      .map(s => {
+        // Treat a missing scheme and HTTP scheme as not HTTPS ready. No network request to the provider.
+        const primary = String(s.service_url || '').trim();
+        const backup = typeof s.backup_url === 'string' ? s.backup_url.trim() : '';
+        const securePrimary = /^https:\/\//i.test(primary);
+        const secureBackup = /^https:\/\//i.test(backup);
+        const key = s.provider_key.substring(0, 64);
+        return { key, name: String(s.display_name || key).substring(0, 80),
+          status: securePrimary ? 'HTTPS configured' : secureBackup ? 'HTTPS backup configured' : 'HTTPS not configured',
+          note: securePrimary ? 'Primary URL uses HTTPS. Authentication still needs testing.'
+            : secureBackup ? 'Backup uses HTTPS; login function may still select the HTTP primary.'
+            : 'HTTP or unspecified protocol. Secure login remains blocked.' };
+      }).sort((a,b)=>a.name.localeCompare(b.name));
+    return { ok: true, providers };
+  } catch { return { ok: false, message: 'Could not check provider configuration. Check your connection.' }; }
 });
 // HTTPS-only verification through the existing Panther Supabase Edge Function.
 // The provider's HTTP endpoint is never contacted by this Windows build.
